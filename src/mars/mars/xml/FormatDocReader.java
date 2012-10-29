@@ -1,0 +1,148 @@
+/* Class name: FormatDocReader
+ * File name:  FormatDocReader.java
+ * Created:    31-Mar-2008 13:02:10
+ * Modified:   01-Apr-2008
+ * Version History:
+ * ~ ~ ~ ~ ~ ~ ~ ~ ~
+ * 0.002  01-Apr-2008 Added parseFormatDoc(String) method to class
+ * 0.001  31-Mar-2008 Initial build
+ */
+
+package mars.mars.xml;
+import java.io.File;
+import java.io.IOException;
+import java.util.logging.*;
+import java.util.prefs.Preferences;
+import javax.xml.XMLConstants;
+import javax.xml.parsers.*;
+import javax.xml.validation.*;
+import mars.mars.gui.MarsClient;
+import mars.mars.object.*;
+import mars.mars.object.customisation.MarsPreferences;
+import mars.mars.object.logging.LoggerFactory;
+import org.xml.sax.*;
+
+/**
+ * This class is responsible for reading (parsing) an XML file passed by the <code>File_Connect</code> class.
+ * It validates the file being read against the defined XSD for Mars Formatting Documents (FormatDocs). When
+ * parsing the class it uses the FormatDocHandler class which is responsible for interpretation of the document
+ * and creating and populating the relevant classes within the <code>mars.mars.object</code> package.
+ * @version 0.002
+ * @author Alex Harris (W4786241)
+ */
+public class FormatDocReader 
+{
+  private static final String parentClassName = "mars.mars.xml.FormatDocReader";
+  private static Logger log;
+  private SchemaFactory xsdFactory;
+  private SAXParserFactory xmlFactory;
+  
+  /**
+   * Initialises the class with instances of <code>Logger, SchemaFactory</code> and <code>SAXParserFactory</code>.
+   * It performs no other actions on the class.
+   */
+  public FormatDocReader()
+  {
+    log = LoggerFactory.getLogger(parentClassName);
+    log.finest("Creating a new instance of SchemaFactory");
+    xsdFactory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+    log.finest("Creating a new instance of SAXParserFactory");
+    xmlFactory = SAXParserFactory.newInstance();
+  }
+  
+  /**
+   * Parses and validates the selected FormatDoc against the schema set in the application preferences. This class
+   * is reliant on the <code>FormatDocHandler</code> class to instantiate the <code>FormatDoc</code>
+   * class and populate it and its related classes (Table, Attribute etc).
+   * @param strFormatDocURI The String representation of the File URI of the required FormatDoc
+   * @return Whether the method has executed without encountering any errors
+   */
+  public boolean parseFormatDoc(String strFormatDocURI)
+  {
+    // Obtain preferences for the application
+    Preferences xsdPrefs = MarsPreferences.getMarsPrefs();
+    // Get the location of the XSD from the preferences. If it can't be obtained then default to the user.dir property
+    String strXSDFileDir = xsdPrefs.get("mars.dir.XSD", System.getProperty("user.dir"));
+    File fXSD = new File(strXSDFileDir);
+    Schema sFD;
+    try
+    {
+      // Try to create the new schema from the file of the file path
+      sFD = xsdFactory.newSchema(fXSD);
+    }
+    catch (Exception x)
+    {
+      // If anything happens then log the error and details and make the method return false.
+      log.finest("An error occurred while trying to open the FormatDoc schema");
+      log.throwing(parentClassName, "parseFormatDoc", x);
+      return false;
+    }
+    // Check to make sure that the schema was correctly configured
+    if (sFD != null)
+    {
+      // If the schema was configured correctly then use it to validate the SAXParserFactory and turn validation on
+      xmlFactory.setSchema(sFD);
+      xmlFactory.setValidating(true);
+      try
+      {
+        log.finest("Creating a new instance of SAXParser");
+        SAXParser xmlDoc = xmlFactory.newSAXParser();
+        log.config("Creating an instance of File for the FormatDoc at " + strFormatDocURI);
+        // Create an instance of File from the argument which should be the URI of the requested FormatDoc.fd.xml
+        File fFormatDocXML = new File(strFormatDocURI);
+        log.finest("Starting to parse file " + fFormatDocXML.getName());
+        // This parses the document using the XML file and an instance of the FormatDocHandler class
+        xmlDoc.parse(fFormatDocXML, new FormatDocHandler());
+        // Put the parsed FormatDoc into the main hashtable of FormatDocStore under the name of the XML file.
+        log.log(Level.CONFIG, "Storing FormatDoc under the system name of " + fFormatDocXML.getName(), FormatDocStore.getTempFD());
+        FormatDocStore.tempToHashTable(fFormatDocXML.getName());
+        MarsClient.getMarsWindow().addNewSystemWindow(fFormatDocXML.getName());
+      }
+      catch (NullPointerException npX)
+      {
+        // This error would most likely be thrown by the File class if the String argument is null
+        log.finest("A null pointer error occurred because the FormatDocURI argument was not set");
+        log.throwing(parentClassName, "parseFormatDoc", npX);
+        return false;
+      }
+      catch (SAXException saxX)
+      {
+        // This would be generated by an error occurring within the FormatDocHandler class caused by a problem with the .fd.xml file
+        log.finest("A SAX error occurred while trying to parse the FormatDoc. See the FormatDocHandler log for more information");
+        log.throwing(parentClassName, "parseFormatDoc", saxX);
+        return false;
+      }
+      catch (IOException ioX)
+      {
+        // This would be caused by a problem obtaining access to the FormatDoc File instance
+        log.finest("An I/O error occurred while trying to read from the XML FormatDoc");
+        log.throwing(parentClassName, "parseFormatDoc", ioX);
+        return false;
+      }
+      catch (ParserConfigurationException pcX)
+      {
+        // This would be caused by a problem with the SAXParser being created by the SAXParserFactory class
+        log.finest("A parser configuration error occurred while trying to create a new SAXParser instance from the SAXParserFactory");
+        log.throwing(parentClassName, "parseFormatDoc", pcX);
+        return false;
+      }
+      catch (Exception x)
+      {
+        // This will catch any other errors coming out of the woodwork
+        log.finest("An general exception occurred");
+        log.throwing(parentClassName, "parseFormatDoc", x);
+        return false;
+      }
+    }
+    else
+    {
+      // If the code ends up here then something strange happened in that no errors were detected while creating the Schema
+      // but it was still set to null.
+      log.severe("The schema for validating FormatDoc XML was null yet no errors were thrown.");
+      return false;
+    }
+    // Everything evaluated OK and the document was parsed without any errors
+    log.finest("Parsed format doc with no problems");
+    return true;
+  }
+}
