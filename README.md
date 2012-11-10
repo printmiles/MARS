@@ -7,7 +7,7 @@ Application for monitoring multiple systems for administrative alerting. Current
 
 Interesting Code
 ----------------
-The JDBC interrogator uses ODBC connection information (DSN name, user ID and password) to display the contents of a database. See src/mars/mars/jdbc/JDBCInterrogator.java lines 89 - 406
+- src/mars/mars/jdbc/JDBCInterrogator.java lines 89 - 406: Uses a DSN name and metadata to display the contects of a database.
 
 Planned functions
 -----------------
