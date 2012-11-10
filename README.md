@@ -7,7 +7,7 @@ Application for monitoring multiple systems for administrative alerting. Current
 
 Interesting Code
 ----------------
-- src/mars/mars/jdbc/JDBCInterrogator.java lines 89 - 406: Uses a DSN name and metadata to display the contects of a database.
+- src/mars/mars/jdbc/JDBCInterrogator.java - Lines 89-406 - Uses a DSN name and metadata to display the contects of a database.
 
 Planned functions
 -----------------
