@@ -5,11 +5,16 @@ Application for monitoring multiple systems for administrative alerting. Current
 - COM port monitoring
 - JDBC/ODBC Database structure detection
 
-Planned functions:
+Interesting Code
+----------------
+The JDBC interrogator uses ODBC connection information (DSN name, user ID and password) to display the contents of a database. See src/mars/mars/jdbc/JDBCInterrogator.java lines 89 - 406
+
+Planned functions
+-----------------
 - Definition of alerts and storage within persistant storage via JAX-B/XML.
 - Connection of the application to data sources via COM port or ODBC.
 - Comparison of defined fields against rules (as defined by the user) and generation of alerts.
 
-Required libraries:
--------------------
+Required libraries
+------------------
 RxTx (http://rxtx.qbang.org/wiki/index.php/Download) - Used for COM port connection
